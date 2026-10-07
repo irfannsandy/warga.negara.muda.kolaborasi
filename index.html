@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GALERI WARGA NEGARA MUDA - Pameran Karya Siswa Interaktif SMP IX</title>
+    <!-- Supabase: database + storage online -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ================================================================
+        // KONFIGURASI ONLINE
+        // Ganti dua nilai berikut dengan Project URL dan anon key Supabase.
+        // Setelah diisi, file ini dapat dipasang di GitHub Pages/Netlify/Vercel.
+        // ================================================================
+        const SUPABASE_URL = 'GANTI_DENGAN_SUPABASE_PROJECT_URL';
+        const SUPABASE_ANON_KEY = 'GANTI_DENGAN_SUPABASE_ANON_KEY';
+        // Jangan gunakan service_role key di sini. Gunakan ANON/PUBLISHABLE key saja.
+        const ONLINE_MODE = !SUPABASE_URL.startsWith('GANTI_') && !SUPABASE_ANON_KEY.startsWith('GANTI_');
+        const supabaseClient = ONLINE_MODE ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+        const ONLINE_STATE_ID = 1;
+        const STORAGE_BUCKET = 'galeri-karya';
+    </script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gallery: {
+                            bg: '#FBF8F3',
+                            wall: '#F3ECE1',
+                            accent: '#D4AF37', // Gold
+                            darkgold: '#B8860B',
+                            wood: '#8C6239',
+                            darkwood: '#5C3D2E',
+                            cream: '#FFFDF9',
+                            warmgrey: '#E8E2D8',
+                            teacher: '#1E3A8A'
+                        }
+                    },
+                    fontFamily: {
+                        museum: ['Cinzel', 'serif'],
+                        sans: ['Plus Jakarta Sans', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'spotlight': '0 20px 50px rgba(140, 98, 57, 0.12)',
+                        'frame': '0 15px 35px rgba(0,0,0,0.2)',
+                        'plaque': 'inset 0 0 10px rgba(212, 175, 55, 0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #FBF8F3;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #332C27;
+        }
+
+        .museum-wall {
+            background: linear-gradient(180deg, #F9F5EC 0%, #EFE8DA 100%);
+            position: relative;
+        }
+
+        .museum-wall::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 160px;
+            background: radial-gradient(ellipse at 50% -20%, rgba(255,248,220,0.8) 0%, rgba(255,255,255,0) 70%);
+            pointer-events: none;
+        }
+
+        .art-frame-gold {
+            border: 12px solid #D4AF37;
+            border-image: linear-gradient(to bottom right, #FFE58F, #B8860B, #D4AF37, #996515) 1;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .art-frame-wood {
+            border: 12px solid #6F4E37;
+            border-image: linear-gradient(to bottom right, #8B5A2B, #4A2E16, #6F4E37, #3D2314) 1;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .plaque-gold {
+            background: linear-gradient(135deg, #FFFDF7 0%, #FAF2E1 100%);
+            border-left: 4px solid #D4AF37;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track { background: #F3ECE1; }
+        ::-webkit-scrollbar-thumb { background: #C5B398; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #A89375; }
+
+        .glass-panel {
+            background: rgba(255, 253, 249, 0.88);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- TEACHER MODE ACTIVE STATUS BANNER -->
+    <div id="teacherModeBanner" class="hidden bg-blue-900 text-blue-100 px-4 py-2 text-xs font-semibold flex items-center justify-between sticky top-0 z-50 border-b border-blue-700 shadow-md">
+        <div class="flex items-center space-x-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span><i class="fa-solid fa-user-shield mr-1"></i> <strong>MODE GURU AKTIF:</strong> Anda memiliki hak akses untuk mengedit petunjuk, menghapus karya, serta menentukan pemenang penghargaan.</span>
+        </div>
+        <button onclick="exitTeacherMode()" class="bg-blue-800 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-xs transition border border-blue-500">
+            <i class="fa-solid fa-right-from-bracket mr-1"></i> Keluar Mode Guru
+        </button>
+    </div>
+
+    <!-- MAIN NAVBAR -->
+    <header class="sticky top-0 z-40 glass-panel shadow-sm border-b border-amber-900/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-amber-100 border border-amber-400 flex items-center justify-center text-amber-800 shadow-inner">
+                    <i class="fa-solid fa-landmark text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-museum text-lg sm:text-xl font-bold tracking-wide text-amber-950">GALERI WARGA NEGARA MUDA</h1>
+                    <p class="text-xs text-amber-800 font-medium">Pendidikan Pancasila &bull; SMP Kelas IX</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Action Buttons -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="openModal('addArtworkModal')" class="bg-amber-800 hover:bg-amber-900 text-amber-50 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-2 shadow-md transition transform hover:-translate-y-0.5">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span class="hidden sm:inline">Unggah Karya</span>
+                    <span class="sm:hidden">Unggah</span>
+                </button>
+
+                <button id="teacherLoginBtn" onclick="openModal('teacherLoginModal')" class="bg-blue-900 hover:bg-blue-950 text-blue-50 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-2 shadow-md transition">
+                    <i class="fa-solid fa-user-gear"></i>
+                    <span class="hidden sm:inline">Mode Guru</span>
+                    <span class="sm:hidden">Guru</span>
+                </button>
+            </div>
+        </div>
+    <div class="absolute top-3 right-3 sm:right-5 z-40"><span id="onlineStatusBadge" class="text-[10px] font-bold px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Memeriksa koneksi...</span></div>
+    </header>
+
+    <!-- HERO MUSEUM HEADER -->
+    <section class="museum-wall py-10 px-4 sm:px-6 lg:px-8 text-center border-b border-amber-900/10 shadow-inner relative overflow-hidden">
+        <div class="max-w-4xl mx-auto relative z-10">
+            <span class="inline-block px-3.5 py-1.5 rounded-full bg-amber-100/90 border border-amber-300 text-amber-900 text-xs font-semibold uppercase tracking-wider mb-3 shadow-sm">
+                <i class="fa-solid fa-award mr-1.5 text-amber-600"></i> Pameran Karya Siswa Interaktif
+            </span>
+            <h2 class="font-museum text-3xl sm:text-5xl font-extrabold text-amber-950 tracking-tight leading-tight mb-3">
+                🖼 GALERI WARGA NEGARA MUDA
+            </h2>
+            <p class="text-sm sm:text-base text-amber-900/80 font-normal italic max-w-2xl mx-auto leading-relaxed">
+                "Memahami Hak, Menjalankan Kewajiban, Mewujudkan Warga Negara yang Bertanggung Jawab"
+            </p>
+
+            <!-- Quick Stats -->
+            <div class="mt-6 inline-flex flex-wrap justify-center items-center gap-4 sm:gap-8 px-6 py-2.5 bg-white/80 backdrop-blur-md rounded-2xl border border-amber-200/80 shadow-sm text-xs sm:text-sm text-amber-900">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-palette text-amber-700"></i>
+                    <span class="font-bold" id="totalArtworksCount">0</span> Karya
+                </div>
+                <div class="h-4 w-px bg-amber-300"></div>
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-heart text-red-500"></i>
+                    <span class="font-bold" id="totalLikesCount">0</span> Apresiasi
+                </div>
+                <div class="h-4 w-px bg-amber-300"></div>
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-comments text-amber-700"></i>
+                    <span class="font-bold" id="totalCommentsCount">0</span> Diskusi
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
+
+        <!-- PINNED TEACHER ANNOUNCEMENT CARD -->
+        <section class="mb-8">
+            <div class="bg-gradient-to-r from-amber-50 via-white to-amber-50 border-l-8 border-amber-800 rounded-2xl p-5 sm:p-6 shadow-md relative overflow-hidden">
+                <div class="flex flex-col sm:flex-row items-start gap-4 relative z-10">
+                    <div class="w-12 h-12 rounded-xl bg-amber-800 text-amber-50 flex items-center justify-center shrink-0 shadow-md">
+                        <i class="fa-solid fa-thumbtack text-xl"></i>
+                    </div>
+                    <div class="flex-grow space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-amber-950 text-base sm:text-lg flex items-center gap-2">
+                                📌 PETUNJUK PAMERAN DARI GURU
+                            </h3>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs px-2.5 py-1 rounded-full bg-amber-200 text-amber-900 font-semibold">Pengumuman</span>
+                                <button id="editInstructionBtn" onclick="openModal('editInstructionModal')" class="hidden bg-blue-100 hover:bg-blue-200 text-blue-900 text-xs px-2.5 py-1 rounded-lg border border-blue-300 font-semibold transition">
+                                    <i class="fa-solid fa-pen mr-1"></i> Edit Petunjuk
+                                </button>
+                            </div>
+                        </div>
+                        <p id="teacherInstructionText" class="text-amber-900/90 text-sm leading-relaxed">
+                            “Selamat datang di Galeri Warga Negara Muda! Jelajahi seluruh karya teman-temanmu baik berupa Gambar, PDF, maupun Dokumen Word. Berikan apresiasi, baca pesan yang disampaikan, dan tuliskan komentar positif yang membangun.”
+                        </p>
+                        <div class="p-3 bg-amber-100/70 rounded-xl border border-amber-200 text-amber-950 text-xs sm:text-sm font-medium flex items-center space-x-2">
+                            <i class="fa-solid fa-lightbulb text-amber-600 text-base"></i>
+                            <span><strong>Refleksi Utama:</strong> <em>"Apakah kita hanya menuntut hak, atau sudah menjalankan kewajiban dengan sungguh-sungguh?"</em></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FILTER & SEARCH BAR -->
+        <section class="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <!-- Gallery Navigation Tabs -->
+            <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+                <button onclick="filterGallery('all')" id="btn-all" class="gallery-tab-btn active px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-amber-800 text-white shadow-sm transition">
+                    <i class="fa-solid fa-border-all mr-1.5"></i> Semua Karya
+                </button>
+                <button onclick="filterGallery('galeri-1')" id="btn-galeri-1" class="gallery-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-white text-amber-900 hover:bg-amber-100 border border-amber-200 transition">
+                    🏛️ Galeri 1: Hak
+                </button>
+                <button onclick="filterGallery('galeri-2')" id="btn-galeri-2" class="gallery-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-white text-amber-900 hover:bg-amber-100 border border-amber-200 transition">
+                    ⚖️ Galeri 2: Kewajiban
+                </button>
+                <button onclick="filterGallery('galeri-3')" id="btn-galeri-3" class="gallery-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-white text-amber-900 hover:bg-amber-100 border border-amber-200 transition">
+                    🏡 Galeri 3: Sehari-Hari
+                </button>
+                <button onclick="filterGallery('galeri-4')" id="btn-galeri-4" class="gallery-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-white text-amber-900 hover:bg-amber-100 border border-amber-200 transition">
+                    🚀 Galeri 4: Aksi Muda
+                </button>
+            </div>
+
+            <!-- Search Input & Hall of Fame -->
+            <div class="flex items-center gap-2 w-full md:w-auto">
+                <div class="relative flex-grow md:w-64">
+                    <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Cari karya, nama, file..." 
+                        class="w-full pl-9 pr-4 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-amber-400 text-xs sm:text-sm"></i>
+                </div>
+                <button onclick="openModal('awardsModal')" class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-1.5 shadow-sm hover:from-amber-600 hover:to-amber-700 transition shrink-0">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span>Penghargaan</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- EXHIBITION GALLERY GRID -->
+        <section id="galleryContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Dynamic Artworks populated by JS -->
+        </section>
+
+        <!-- EMPTY STATE MESSAGE -->
+        <div id="emptyState" class="hidden text-center py-16 bg-white/60 rounded-3xl border border-dashed border-amber-300 my-8">
+            <i class="fa-solid fa-folder-open text-4xl text-amber-400 mb-3"></i>
+            <h4 class="font-bold text-amber-950 text-lg">Belum Ada Karya dalam Kategori Ini</h4>
+            <p class="text-xs text-amber-800">Silakan unggah karya siswa baru menggunakan tombol "Unggah Karya".</p>
+        </div>
+
+        <!-- REFLEKSI PENGUNJUNG: SUARA WARGA NEGARA MUDA -->
+        <section id="reflection-section" class="mt-16 pt-10 border-t-2 border-amber-200">
+            <div class="bg-gradient-to-b from-amber-100/60 to-amber-50 p-6 sm:p-8 rounded-3xl border border-amber-200 shadow-sm">
+                <div class="max-w-3xl mx-auto text-center mb-8">
+                    <span class="inline-block px-3 py-1 rounded-full bg-amber-200 text-amber-900 text-xs font-bold uppercase tracking-wider mb-2">
+                        💬 Dinding Diskusi Interaktif
+                    </span>
+                    <h3 class="font-museum text-2xl sm:text-3xl font-extrabold text-amber-950 mb-2">
+                        💭 SUARA WARGA NEGARA MUDA
+                    </h3>
+                    <p class="text-xs sm:text-sm text-amber-900/90 leading-relaxed font-medium">
+                        “Setelah melihat karya teman-temanmu, <strong>satu hak apa yang paling kamu syukuri</strong> dan <strong>satu kewajiban apa yang akan kamu lakukan dengan lebih baik?</strong>”
+                    </p>
+                </div>
+
+                <!-- Reflection Form Input -->
+                <div class="max-w-2xl mx-auto bg-white p-5 rounded-2xl border border-amber-200 shadow-sm mb-8">
+                    <form id="reflectionForm" onsubmit="submitReflection(event)" class="space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input type="text" id="refName" placeholder="Nama Lengkap Siswa" required 
+                                class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-amber-50/30 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <input type="text" id="refClass" placeholder="Kelas (misal: IX-A)" required 
+                                class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-amber-50/30 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <textarea id="refContent" rows="3" placeholder="Tuliskan refleksi jujurmu di sini..." required 
+                            class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-amber-50/30 focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+                        <button type="submit" class="w-full bg-amber-800 hover:bg-amber-900 text-white font-semibold py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Kirim Refleksi Diri</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Sticky Notes Wall -->
+                <div id="reflectionWall" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-amber-950 text-amber-200/80 py-8 border-t border-amber-900 text-xs mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+            <p class="font-museum font-bold text-amber-100 text-sm">GALERI WARGA NEGARA MUDA</p>
+            <p>Pendidikan Pancasila &bull; Pembelajaran Hak dan Kewajiban Warga Negara SMP Kelas IX</p>
+            <p class="text-amber-400/60 pt-2">&copy; 2026 Pameran Karya Siswa Digital. Media Pembelajaran Interaktif.</p>
+        </div>
+    </footer>
+
+    <!-- MODAL 1: TEACHER LOGIN MODAL -->
+    <div id="teacherLoginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full border border-blue-200 shadow-2xl overflow-hidden p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 class="font-bold text-blue-950 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-blue-800"></i> Masuk Mode Guru (Admin)
+                </h3>
+                <button onclick="closeModal('teacherLoginModal')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-gray-600">Masukkan PIN / Kata Sandi Guru untuk mengaktifkan fitur hapus karya, kelola petunjuk, dan penentuan penghargaan.</p>
+            
+            <form onsubmit="handleTeacherLogin(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">PIN / Password Guru</label>
+                    <input type="password" id="teacherPinInput" required placeholder="Masukkan PIN (Default: 1234)" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500">
+                    <span class="text-[10px] text-blue-600 mt-1 block">* Catatan: Gunakan PIN <code class="bg-blue-50 px-1 rounded">1234</code> atau <code class="bg-blue-50 px-1 rounded">guru123</code></span>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('teacherLoginModal')" class="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 bg-gray-100">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-blue-900 hover:bg-blue-950">Verifikasi & Masuk</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: UPLOAD ARTWORK WITH LOCAL FILE READER (IMAGE, PDF, WORD) -->
+    <div id="addArtworkModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-gallery-bg rounded-3xl max-w-2xl w-full border border-amber-300 shadow-2xl overflow-hidden my-8 relative">
+            <div class="bg-amber-900 px-6 py-4 text-amber-50 flex items-center justify-between">
+                <h3 class="font-museum font-bold text-lg"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> Unggah Karya Siswa (Gambar / PDF / Word)</h3>
+                <button onclick="closeModal('addArtworkModal')" class="text-amber-200 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form onsubmit="addNewArtwork(event)" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <div>
+                    <label class="block text-xs font-bold text-amber-900 mb-1">Judul Karya *</label>
+                    <input type="text" id="newTitle" required placeholder="Contoh: Infografis Hak Memperoleh Pendidikan" class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-amber-900 mb-1">Nama / Kelompok Siswa *</label>
+                        <input type="text" id="newAuthor" required placeholder="Nama Siswa atau Kelompok" class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-amber-900 mb-1">Kelas *</label>
+                        <input type="text" id="newClass" required placeholder="IX-A / IX-B" class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-amber-900 mb-1">Galeri / Kategori *</label>
+                        <select id="newCategory" required class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white">
+                            <option value="galeri-1">Galeri 1 — Hak Warga Negara</option>
+                            <option value="galeri-2">Galeri 2 — Kewajiban Warga Negara</option>
+                            <option value="galeri-3">Galeri 3 — Hak & Kewajiban Sehari-hari</option>
+                            <option value="galeri-4">Galeri 4 — Aksi Warga Negara Muda</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-amber-900 mb-1">Jenis Karya *</label>
+                        <input type="text" id="newType" required placeholder="Gambar / Poster / PDF Document / Word Essay" class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white">
+                    </div>
+                </div>
+
+                <!-- FILE UPLOAD INPUT OR PRESET SAMPLE -->
+                <div class="bg-amber-100/50 p-4 rounded-2xl border border-amber-200 space-y-3">
+                    <label class="block text-xs font-bold text-amber-900">
+                        <i class="fa-solid fa-file-arrow-up mr-1 text-amber-700"></i> Unggah File Lokal (Gambar / PDF / Word) atau Pilih Preset
+                    </label>
+                    
+                    <input type="file" id="localFileInput" onchange="handleFileSelect(event)" accept="image/*,.pdf,.doc,.docx" 
+                        class="w-full text-xs text-amber-900 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-800 file:text-white hover:file:bg-amber-900 cursor-pointer">
+                    
+                    <div id="fileUploadStatus" class="hidden text-xs text-emerald-800 font-medium flex items-center gap-1.5 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                        <i class="fa-solid fa-circle-check"></i> <span id="fileUploadName">File berhasil dimuat.</span>
+                    </div>
+
+                    <!-- Preset Samples Fallback -->
+                    <div class="pt-1">
+                        <span class="text-[11px] text-amber-800 block mb-1 font-medium">Atau gunakan pilihan cepat karya sampel:</span>
+                        <div class="flex flex-wrap gap-2 text-xs">
+                            <button type="button" onclick="setPresetSample('image', 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800', 'Poster Pendidikan')" class="px-2.5 py-1 bg-white border border-amber-300 rounded-lg text-amber-900 hover:bg-amber-50">🖼️ Poster Gambar</button>
+                            <button type="button" onclick="setPresetSample('pdf', 'sample-hak-kewajiban.pdf', 'Dokumen PDF Analisis Hak')" class="px-2.5 py-1 bg-white border border-amber-300 rounded-lg text-amber-900 hover:bg-amber-50">📄 Dokumen PDF</button>
+                            <button type="button" onclick="setPresetSample('word', 'makalah-warga-negara.docx', 'Makalah Word Esai Pancasila')" class="px-2.5 py-1 bg-white border border-amber-300 rounded-lg text-amber-900 hover:bg-amber-50">📝 File Word (.docx)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-amber-900 mb-1">Deskripsi Singkat Karya *</label>
+                    <textarea id="newDescription" rows="2" required placeholder="Jelaskan mengenai isi dan tujuan pembuatan karya ini..." class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-amber-900 mb-1">Hak / Kewajiban yang Dibahas *</label>
+                        <input type="text" id="newRightsDuties" required placeholder="Hak Memperoleh Pendidikan / Taat Hukum" class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-amber-900 mb-1">Nilai Pancasila *</label>
+                        <select id="newPancasilaValue" required class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white">
+                            <option value="Sila ke-1: Ketuhanan Yang Maha Esa">Sila 1 - Ketuhanan</option>
+                            <option value="Sila ke-2: Kemanusiaan yang Adil dan Beradab">Sila 2 - Kemanusiaan</option>
+                            <option value="Sila ke-3: Persatuan Indonesia">Sila 3 - Persatuan</option>
+                            <option value="Sila ke-4: Kerakyatan yang Dipimpin oleh Hikmat">Sila 4 - Musyawarah</option>
+                            <option value="Sila ke-5: Keadilan Sosial bagi Seluruh Rakyat">Sila 5 - Keadilan Sosial</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-amber-900 mb-1">Pesan untuk Pengunjung *</label>
+                    <input type="text" id="newMessage" required placeholder="Pesan inspiratif untuk teman-teman..." class="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white">
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('addArtworkModal')" class="px-4 py-2 rounded-xl border border-amber-300 text-amber-900 text-xs font-semibold">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-amber-800 text-white text-xs font-bold hover:bg-amber-900">Simpan & Tampilkan Karya</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: ARTWORK DETAIL VIEWER -->
+    <div id="artworkDetailModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-gallery-bg rounded-3xl max-w-4xl w-full border border-amber-300 shadow-2xl overflow-hidden my-8 relative flex flex-col max-h-[90vh]">
+            <button onclick="closeModal('artworkDetailModal')" class="absolute top-4 right-4 z-20 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="overflow-y-auto p-6 sm:p-8 space-y-6">
+                <div id="modalArtworkContent">
+                    <!-- Dynamic modal content -->
+                </div>
+
+                <!-- Comments & Discussion Area -->
+                <div class="border-t border-amber-200 pt-6">
+                    <h4 class="font-bold text-amber-950 text-base mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-comments text-amber-700"></i> Diskusi & Apresiasi Pengunjung
+                    </h4>
+                    
+                    <div class="flex gap-2 mb-6">
+                        <input type="text" id="modalCommentAuthor" placeholder="Nama Anda" class="w-1/3 px-3 py-2 rounded-xl border border-amber-200 text-xs bg-white">
+                        <input type="text" id="modalCommentText" placeholder="Tuliskan komentar positif..." class="w-2/3 px-3 py-2 rounded-xl border border-amber-200 text-xs bg-white">
+                        <button onclick="submitModalComment()" class="bg-amber-800 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-900 transition">Kirim</button>
+                    </div>
+
+                    <div id="modalCommentsList" class="space-y-3 max-h-48 overflow-y-auto pr-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: EDIT TEACHER INSTRUCTION -->
+    <div id="editInstructionModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full border border-blue-200 shadow-2xl overflow-hidden p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 class="font-bold text-blue-950 text-base">Edit Petunjuk Guru</h3>
+                <button onclick="closeModal('editInstructionModal')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="saveTeacherInstruction(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Isi Pesan Petunjuk Pameran</label>
+                    <textarea id="editInstructionInput" rows="4" required class="w-full p-3 rounded-xl border border-gray-300 text-xs text-gray-800 focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('editInstructionModal')" class="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 bg-gray-100">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-blue-900 hover:bg-blue-950">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 5: AWARDS HALL OF FAME -->
+    <div id="awardsModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-gallery-bg rounded-3xl max-w-3xl w-full border border-amber-300 shadow-2xl overflow-hidden my-8 relative">
+            <div class="bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 px-6 py-5 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="font-museum font-bold text-xl flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-amber-300"></i> PENGHARGAAN GALERI WARGA NEGARA MUDA
+                    </h3>
+                    <p class="text-xs text-amber-200">Apresiasi Karya Terbaik Hasil Penilaian & Voting Galeri</p>
+                </div>
+                <button onclick="closeModal('awardsModal')" class="text-amber-200 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto" id="awardsCategoryList">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* -------------------------------------------------------------------------- */
+        /* INITIAL DATA & SAMPLE STORAGE                                              */
+        /* -------------------------------------------------------------------------- */
+        const sampleArtworks = [
+            {
+                id: 'art-1',
+                title: 'Lentera Masa Depan: Hak Atas Pendidikan Layak',
+                author: 'Kelompok 1 (Aditya & Kirana)',
+                class: 'IX-A',
+                category: 'galeri-1',
+                type: 'Gambar / Poster',
+                fileType: 'image',
+                fileUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800',
+                description: 'Karya poster ini menggambarkan betapa pentingnya akses pendidikan yang merata untuk seluruh anak bangsa tanpa memandang latar belakang sosial.',
+                rightsDuties: 'Hak memperoleh pendidikan (Pasal 31 ayat 1 UUD 1945)',
+                pancasilaValue: 'Sila ke-5: Keadilan Sosial bagi Seluruh Rakyat Indonesia',
+                message: 'Jangan pernah sia-siakan kesempatan belajar demi kemajuan bangsa.',
+                likes: 42,
+                votes: 18,
+                frameType: 'gold',
+                comments: [
+                    { id: 'c1', name: 'Budi Santoso', text: 'Desain warnanya sangat hangat dan informasinya mudah dipahami!' },
+                    { id: 'c2', name: 'Ibu Ratna (Guru)', text: 'Analisis pasal UUD-nya sangat tepat. Karya yang menginspirasi!' }
+                ]
+            },
+            {
+                id: 'art-2',
+                title: 'Laporan Kajian: Kesadaran Hukum & Hak Warga Negara',
+                author: 'Siti Rahmawati',
+                class: 'IX-C',
+                category: 'galeri-1',
+                type: 'Dokumen PDF',
+                fileType: 'pdf',
+                fileUrl: 'sample-hak-kewajiban.pdf',
+                pdfPages: 4,
+                description: 'Dokumen kajian ringkas PDF mengenai pentingnya perlindungan hukum bagi setiap warga negara tanpa diskriminasi.',
+                rightsDuties: 'Hak atas perlindungan hukum dan keadilan (Pasal 28D ayat 1)',
+                pancasilaValue: 'Sila ke-2: Kemanusiaan yang Adil dan Beradab',
+                message: 'Hukum hadir bukan untuk menakuti, melainkan untuk melindungi hak setiap individu.',
+                likes: 31,
+                votes: 22,
+                frameType: 'wood',
+                comments: [
+                    { id: 'c3', name: 'Dewi Ayu', text: 'Format laporan PDF-nya sangat rapi dan komprehensif!' }
+                ]
+            },
+            {
+                id: 'art-3',
+                title: 'Esai Kritis: Kontribusi Pajak & Pembangunan Negara',
+                author: 'Kelompok Garuda (Fajar & Rian)',
+                class: 'IX-B',
+                category: 'galeri-2',
+                type: 'File Word (.docx)',
+                fileType: 'word',
+                fileUrl: 'makalah-warga-negara.docx',
+                wordTextContent: 'Pajak merupakan modal utama pembangunan nasional. Tanpa pajak, fasilitas umum seperti rumah sakit, sekolah, dan jalan tidak dapat terbangun secara optimal. Oleh karena itu, kewajiban membayar pajak adalah wujud nyata bela negara.',
+                description: 'Dokumen karya tulis Word berupa esai analisis ketaatan pajak sebagai bentuk kewajiban warga negara muda.',
+                rightsDuties: 'Kewajiban menaati hukum & membela negara lewat pajak (Pasal 23A)',
+                pancasilaValue: 'Sila ke-3: Persatuan Indonesia',
+                message: 'Menjadi warga negara taat pajak adalah bentuk cinta tanah air yang nyata.',
+                likes: 48,
+                votes: 29,
+                frameType: 'gold',
+                comments: [
+                    { id: 'c4', name: 'Andi Saputra', text: 'Penjelasan esai Word-nya sangat tajam dan logis!' }
+                ]
+            },
+            {
+                id: 'art-4',
+                title: 'Aksi Nyata: Gerakan Lingkungan Bersama',
+                author: 'Nabila Putri',
+                class: 'IX-A',
+                category: 'galeri-2',
+                type: 'Gambar / Dokumentasi',
+                fileType: 'image',
+                fileUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800',
+                description: 'Dokumentasi aksi nyata penanaman pohon dan pemilahan sampah di lingkungan sekolah.',
+                rightsDuties: 'Kewajiban menjaga kelestarian lingkungan hidup',
+                pancasilaValue: 'Sila ke-5: Keadilan Sosial',
+                message: 'Bumi adalah titipan anak cucu kita, mari kita jaga kebersihannya hari ini.',
+                likes: 55,
+                votes: 35,
+                frameType: 'wood',
+                comments: [
+                    { id: 'c5', name: 'Rizky', text: 'Keren banget aksi nyatanya!' }
+                ]
+            }
+        ];
+
+        const sampleReflections = [
+            {
+                id: 'ref-1',
+                name: 'Anindya Putri',
+                class: 'IX-B',
+                content: 'Saya sangat mensyukuri hak atas pendidikan. Kewajiban yang akan saya tingkatkan adalah lebih disiplin membuang sampah dan menghargai pendapat teman saat diskusi.'
+            },
+            {
+                id: 'ref-2',
+                name: 'Galang Persada',
+                class: 'IX-A',
+                content: 'Hak yang paling saya syukuri adalah kebebasan menyampaikan ide. Ke depannya, saya berjanji akan lebih taat aturan sekolah.'
+            }
+        ];
+
+        const awardCategories = [
+            { key: 'creative', title: '🎨 Karya Paling Kreatif', desc: 'Karya dengan konsep paling unik dan inovatif.' },
+            { key: 'inspirational', title: '💡 Karya Paling Inspiratif', desc: 'Karya yang memberi dorongan moral paling kuat.' },
+            { key: 'meaningful', title: '📜 Pesan Paling Bermakna', desc: 'Ungkapan pesan pengunjung yang paling menggugah.' },
+            { key: 'visual', title: '🖼️ Visual Terbaik', desc: 'Estetika desain, komposisi warna, dan kerapihan terbaik.' },
+            { key: 'collaboration', title: '🤝 Kolaborasi Terbaik', desc: 'Kerjasama kelompok paling solid dan harmonis.' }
+        ];
+
+        /* -------------------------------------------------------------------------- */
+        /* ONLINE STATE — SUPABASE CLOUD + REALTIME                                   */
+        /* -------------------------------------------------------------------------- */
+        let artworks = [];
+        let reflections = [];
+        let isTeacherMode = false;
+        let currentFilter = 'all';
+        let currentActiveArtId = null;
+        let pendingUploadedFile = null;
+        let manualAwardWinners = {};
+        let realtimeChannel = null;
+
+        window.addEventListener('load', async function() {
+            try {
+                if (!ONLINE_MODE) {
+                    // Tidak ada localStorage lagi. Data contoh hanya untuk preview.
+                    artworks = [...sampleArtworks];
+                    reflections = [...sampleReflections];
+                    updateOnlineIndicator();
+                    showOnlineSetupWarning();
+                } else {
+                    await loadOnlineData();
+                    startRealtimeSync();
+                }
+            } catch (error) {
+                console.error('Gagal memuat data online:', error);
+                artworks = [];
+                reflections = [];
+                alert('Database online belum dapat diakses. Pastikan Supabase sudah disiapkan sesuai file supabase_setup.sql.');
+            }
+
+            renderGallery();
+            renderReflections();
+            updateStats();
+            renderAwardsModalContent();
+            updateOnlineIndicator();
+        });
+
+        function showOnlineSetupWarning() {
+            const badge = document.getElementById('onlineStatusBadge');
+            if (badge) {
+                badge.title = 'Isi SUPABASE_URL dan SUPABASE_ANON_KEY pada bagian konfigurasi file index.html.';
+            }
+        }
+
+        async function loadOnlineData() {
+            const { data, error } = await supabaseClient
+                .from('galeri_state')
+                .select('id, artworks, reflections, instruction, awards, updated_at')
+                .eq('id', ONLINE_STATE_ID)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!data) {
+                throw new Error('Baris galeri_state id=1 belum tersedia. Jalankan supabase_setup.sql.');
+            }
+
+            applyOnlineState(data);
+        }
+
+        function applyOnlineState(data) {
+            artworks = Array.isArray(data.artworks) ? data.artworks : [];
+            reflections = Array.isArray(data.reflections) ? data.reflections : [];
+            manualAwardWinners = data.awards || {};
+
+            if (data.instruction) {
+                document.getElementById('teacherInstructionText').innerText = data.instruction;
+            }
+
+            updateStats();
+        }
+
+        function startRealtimeSync() {
+            if (!ONLINE_MODE || realtimeChannel) return;
+
+            realtimeChannel = supabaseClient
+                .channel('galeri-warga-negara-muda-live')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'galeri_state',
+                        filter: 'id=eq.1'
+                    },
+                    (payload) => {
+                        if (payload.new) {
+                            applyOnlineState(payload.new);
+                            renderGallery();
+                            renderReflections();
+                            renderAwardsModalContent();
+
+                            if (currentActiveArtId) {
+                                const activeArt = artworks.find(a => a.id === currentActiveArtId);
+                                if (activeArt) renderModalComments(activeArt);
+                            }
+                        }
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('Realtime status:', status);
+                });
+        }
+
+        async function refreshOnlineData() {
+            if (!ONLINE_MODE) return;
+
+            try {
+                await loadOnlineData();
+                renderGallery();
+                renderReflections();
+                updateStats();
+                renderAwardsModalContent();
+
+                if (currentActiveArtId) {
+                    const activeArt = artworks.find(a => a.id === currentActiveArtId);
+                    if (activeArt) renderModalComments(activeArt);
+                }
+            } catch(e) {
+                console.error('Refresh online gagal:', e);
+            }
+        }
+
+        async function saveData() {
+            if (!ONLINE_MODE) {
+                alert('Website belum terhubung ke Supabase. Isi konfigurasi Supabase terlebih dahulu.');
+                return false;
+            }
+
+            const instruction = document.getElementById('teacherInstructionText')?.innerText || '';
+
+            const { error } = await supabaseClient.rpc('save_gallery_settings', {
+                p_instruction: instruction,
+                p_awards: manualAwardWinners
+            });
+
+            if (error) {
+                console.error('Gagal menyimpan pengaturan:', error);
+                alert('Perubahan belum tersimpan. Periksa Supabase dan jalankan supabase_setup.sql.');
+                return false;
+            }
+
+            return true;
+        }
+
+        function updateOnlineIndicator() {
+            const badge = document.getElementById('onlineStatusBadge');
+            if(!badge) return;
+
+            badge.innerHTML = ONLINE_MODE
+                ? '<i class="fa-solid fa-cloud mr-1"></i> ONLINE • Data Bersama • Realtime'
+                : '<i class="fa-solid fa-link-slash mr-1"></i> BELUM TERHUBUNG • Isi Supabase';
+
+            badge.className = ONLINE_MODE
+                ? 'text-[10px] sm:text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200'
+                : 'text-[10px] sm:text-xs font-bold px-3 py-1.5 rounded-full bg-red-100 text-red-800 border border-red-200';
+        }
+
+        function updateStats() {
+            document.getElementById('totalArtworksCount').innerText = artworks.length;
+            const totalLikes = artworks.reduce((acc, curr) => acc + (curr.likes || 0), 0);
+            const totalComments = artworks.reduce((acc, curr) => acc + (curr.comments ? curr.comments.length : 0), 0);
+            document.getElementById('totalLikesCount').innerText = totalLikes;
+            document.getElementById('totalCommentsCount').innerText = totalComments;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* TEACHER MODE AUTHENTICATION & MANAGEMENT                                  */
+        /* -------------------------------------------------------------------------- */
+        function handleTeacherLogin(event) {
+            event.preventDefault();
+            const pin = document.getElementById('teacherPinInput').value.trim();
+            if(pin === '1234' || pin === 'guru123') {
+                isTeacherMode = true;
+                document.getElementById('teacherModeBanner').classList.remove('hidden');
+                document.getElementById('teacherLoginBtn').classList.add('hidden');
+                document.getElementById('editInstructionBtn').classList.remove('hidden');
+                closeModal('teacherLoginModal');
+                document.getElementById('teacherPinInput').value = '';
+                renderGallery();
+                renderReflections();
+                renderAwardsModalContent();
+            } else {
+                alert('PIN Salah! Masukkan PIN default: 1234 atau guru123');
+            }
+        }
+
+        function exitTeacherMode() {
+            isTeacherMode = false;
+            document.getElementById('teacherModeBanner').classList.add('hidden');
+            document.getElementById('teacherLoginBtn').classList.remove('hidden');
+            document.getElementById('editInstructionBtn').classList.add('hidden');
+            renderGallery();
+            renderReflections();
+            renderAwardsModalContent();
+        }
+
+        async function saveTeacherInstruction(event) {
+            event.preventDefault();
+            const text = document.getElementById('editInstructionInput').value.trim();
+
+            if(text) {
+                document.getElementById('teacherInstructionText').innerText = text;
+                const ok = await saveData();
+                if (ok) closeModal('editInstructionModal');
+            }
+        }
+
+        async function deleteArtwork(artId) {
+            if(!ONLINE_MODE) {
+                alert('Hubungkan website ke Supabase terlebih dahulu.');
+                return;
+            }
+
+            if(confirm('Apakah Anda yakin ingin menghapus karya siswa ini dari pameran?')) {
+                const { error } = await supabaseClient.rpc('delete_artwork', { p_art_id: artId });
+
+                if (error) {
+                    console.error(error);
+                    alert('Karya gagal dihapus dari database online.');
+                    return;
+                }
+
+                await refreshOnlineData();
+            }
+        }
+
+        async function deleteReflection(refId) {
+            if(!ONLINE_MODE) {
+                alert('Hubungkan website ke Supabase terlebih dahulu.');
+                return;
+            }
+
+            if(confirm('Hapus postingan refleksi siswa ini?')) {
+                const { error } = await supabaseClient.rpc('delete_reflection', { p_ref_id: refId });
+
+                if (error) {
+                    console.error(error);
+                    alert('Refleksi gagal dihapus dari database online.');
+                    return;
+                }
+
+                await refreshOnlineData();
+            }
+        }
+
+        async function deleteComment(artId, commentId) {
+            if(!ONLINE_MODE) {
+                alert('Hubungkan website ke Supabase terlebih dahulu.');
+                return;
+            }
+
+            if(confirm('Hapus komentar ini?')) {
+                const { error } = await supabaseClient.rpc('delete_comment', {
+                    p_art_id: artId,
+                    p_comment_id: commentId
+                });
+
+                if (error) {
+                    console.error(error);
+                    alert('Komentar gagal dihapus dari database online.');
+                    return;
+                }
+
+                await refreshOnlineData();
+            }
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* FILE UPLOAD — SUPABASE STORAGE                                             */
+        /* -------------------------------------------------------------------------- */
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+
+            const fileName = file.name;
+            const extension = fileName.split('.').pop().toLowerCase();
+
+            if(!['jpg','jpeg','png','webp','gif','pdf','doc','docx'].includes(extension)) {
+                alert('Format file tidak didukung! Pilih file Gambar, PDF, atau Word.');
+                event.target.value = '';
+                return;
+            }
+
+            const maxSizeMB = 10;
+            if (file.size > maxSizeMB * 1024 * 1024) {
+                alert(`Ukuran file maksimal ${maxSizeMB} MB.`);
+                event.target.value = '';
+                return;
+            }
+
+            const fileType = ['jpg','jpeg','png','webp','gif'].includes(extension)
+                ? 'image'
+                : (extension === 'pdf' ? 'pdf' : 'word');
+
+            pendingUploadedFile = {
+                fileType,
+                file,
+                fileName,
+                pdfPages: fileType === 'pdf' ? 1 : null,
+                wordTextContent: fileType === 'word'
+                    ? `Dokumen Word: ${fileName}. Buka file untuk membaca isi lengkap.`
+                    : null
+            };
+
+            showFileUploadSuccess(
+                `${fileType === 'image' ? 'Gambar' : fileType === 'pdf' ? 'PDF' : 'Word'} "${fileName}" siap diunggah ke penyimpanan cloud.`
+            );
+        }
+
+        function showFileUploadSuccess(msg) {
+            const statusDiv = document.getElementById('fileUploadStatus');
+            const nameSpan = document.getElementById('fileUploadName');
+            nameSpan.innerText = msg;
+            statusDiv.classList.remove('hidden');
+        }
+
+        function setPresetSample(type, urlOrName, label) {
+            if(type === 'image') {
+                pendingUploadedFile = { fileType: 'image', fileUrl: urlOrName, fileName: label };
+            } else if(type === 'pdf') {
+                pendingUploadedFile = { fileType: 'pdf', fileUrl: urlOrName, fileName: label, pdfPages: 3 };
+            } else if(type === 'word') {
+                pendingUploadedFile = {
+                    fileType: 'word',
+                    fileUrl: '#',
+                    fileName: label,
+                    wordTextContent: 'Naskah esai tulisan siswa mengenai kesadaran berbangsa dan bernegara dalam kehidupan sehari-hari.'
+                };
+            }
+
+            showFileUploadSuccess(`Preset "${label}" terpilih.`);
+        }
+
+        async function uploadFileToStorage(file) {
+            if(!ONLINE_MODE || !file) return null;
+
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safeName}`;
+
+            const { error: uploadError } = await supabaseClient
+                .storage
+                .from(STORAGE_BUCKET)
+                .upload(path, file, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    contentType: file.type || 'application/octet-stream'
+                });
+
+            if(uploadError) throw uploadError;
+
+            const { data } = supabaseClient.storage
+                .from(STORAGE_BUCKET)
+                .getPublicUrl(path);
+
+            return data.publicUrl;
+        }
+
+        async function addNewArtwork(event) {
+            event.preventDefault();
+
+            if(!ONLINE_MODE) {
+                alert('Website belum terhubung ke Supabase. Isi SUPABASE_URL dan SUPABASE_ANON_KEY terlebih dahulu.');
+                return;
+            }
+
+            if(!pendingUploadedFile) {
+                alert('Silakan unggah file karya atau pilih preset karya terlebih dahulu!');
+                return;
+            }
+
+            const submitBtn = event.submitter || event.target.querySelector('button[type="submit"]');
+            if(submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.dataset.oldText = submitBtn.innerText;
+                submitBtn.innerText = 'Mengunggah...';
+            }
+
+            try {
+                let fileUrl = pendingUploadedFile.fileUrl || '#';
+
+                if(pendingUploadedFile.file) {
+                    fileUrl = await uploadFileToStorage(pendingUploadedFile.file);
+                }
+
+                const newArt = {
+                    id: 'art-' + Date.now() + '-' + Math.random().toString(36).slice(2,7),
+                    title: document.getElementById('newTitle').value.trim(),
+                    author: document.getElementById('newAuthor').value.trim(),
+                    class: document.getElementById('newClass').value.trim(),
+                    category: document.getElementById('newCategory').value,
+                    type: document.getElementById('newType').value.trim(),
+                    fileType: pendingUploadedFile.fileType,
+                    fileUrl,
+                    fileName: pendingUploadedFile.fileName,
+                    pdfPages: pendingUploadedFile.pdfPages || null,
+                    wordTextContent: pendingUploadedFile.wordTextContent || null,
+                    description: document.getElementById('newDescription').value.trim(),
+                    rightsDuties: document.getElementById('newRightsDuties').value.trim(),
+                    pancasilaValue: document.getElementById('newPancasilaValue').value,
+                    message: document.getElementById('newMessage').value.trim(),
+                    likes: 1,
+                    votes: 0,
+                    frameType: Math.random() > 0.5 ? 'gold' : 'wood',
+                    comments: [],
+                    createdAt: new Date().toISOString()
+                };
+
+                const { error } = await supabaseClient.rpc('append_artwork', {
+                    p_artwork: newArt
+                });
+
+                if (error) throw error;
+
+                artworks.unshift(newArt);
+                updateStats();
+                renderGallery();
+
+                closeModal('addArtworkModal');
+                event.target.reset();
+                pendingUploadedFile = null;
+                document.getElementById('fileUploadStatus').classList.add('hidden');
+
+                alert('Karya berhasil dipublikasikan. Semua perangkat yang membuka galeri akan menerima pembaruan online.');
+            } catch(error) {
+                console.error(error);
+                alert('Karya gagal diunggah. Pastikan Supabase Database dan Storage sudah disiapkan.');
+            } finally {
+                if(submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = submitBtn.dataset.oldText || 'Simpan';
+                }
+            }
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* EXHIBITION GALLERY RENDERING                                               */
+        /* -------------------------------------------------------------------------- */
+        function renderGallery() {
+            const container = document.getElementById('galleryContainer');
+            const emptyState = document.getElementById('emptyState');
+            const searchKeyword = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            container.innerHTML = '';
+
+            const filtered = artworks.filter(item => {
+                const matchesCategory = (currentFilter === 'all') || (item.category === currentFilter);
+                const matchesSearch = item.title.toLowerCase().includes(searchKeyword) || 
+                                      item.author.toLowerCase().includes(searchKeyword) ||
+                                      item.description.toLowerCase().includes(searchKeyword);
+                return matchesCategory && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(art => {
+                const frameClass = art.frameType === 'wood' ? 'art-frame-wood' : 'art-frame-gold';
+                const card = document.createElement('div');
+                card.className = "bg-gallery-cream rounded-3xl overflow-hidden shadow-spotlight border border-amber-200/80 flex flex-col justify-between relative group";
+
+                card.innerHTML = `
+                    ${isTeacherMode ? `
+                        <button onclick="deleteArtwork('${art.id}')" class="absolute top-3 right-3 z-30 bg-red-600 hover:bg-red-700 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition" title="Hapus Karya Ini (Mode Guru)">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    ` : ''}
+
+                    <div>
+                        <!-- MUSEUM ARTWORK DISPLAY FRAME WITH FILE TYPE PREVIEW -->
+                        <div class="relative bg-amber-950 p-4 flex items-center justify-center min-h-[240px] overflow-hidden">
+                            ${renderArtworkPreviewThumbnail(art, frameClass)}
+                            
+                            <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-amber-200 text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-full border border-amber-400/30">
+                                ${getCategoryBadge(art.category)}
+                            </div>
+
+                            <!-- Click to Open Overlay -->
+                            <button onclick="openArtworkDetail('${art.id}')" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-semibold text-xs space-x-2">
+                                <span class="bg-amber-800/90 text-amber-50 px-3.5 py-1.5 rounded-full border border-amber-300/50 shadow-lg">
+                                    <i class="fa-solid fa-magnifying-glass-plus mr-1"></i> Buka Karya Detail
+                                </span>
+                            </button>
+                        </div>
+
+                        <!-- MUSEUM PLAQUE CARD -->
+                        <div class="p-5 plaque-gold space-y-3">
+                            <h3 class="font-museum font-bold text-amber-950 text-base sm:text-lg leading-snug line-clamp-2">
+                                ${art.title}
+                            </h3>
+
+                            <div class="text-xs text-amber-900/80 space-y-1">
+                                <p class="font-bold text-amber-900 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-user-pen text-amber-700"></i> ${art.author} (${art.class})
+                                </p>
+                                <p class="text-[11px] text-amber-700/90 font-medium">
+                                    <i class="fa-solid fa-shapes text-amber-600"></i> Format: <strong>${art.type}</strong>
+                                </p>
+                            </div>
+
+                            <p class="text-xs text-amber-950/90 line-clamp-2 leading-relaxed bg-amber-100/50 p-2.5 rounded-xl border border-amber-200/50 italic">
+                                "${art.description}"
+                            </p>
+
+                            <!-- HAK / KEWAJIBAN & PANCASILA BADGES -->
+                            <div class="space-y-1.5 text-[11px]">
+                                <div class="bg-amber-200/60 text-amber-950 px-2.5 py-1 rounded-lg font-medium border border-amber-300/50 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-scale-balanced text-amber-800"></i>
+                                    <span class="truncate"><strong>Fokus:</strong> ${art.rightsDuties}</span>
+                                </div>
+                                <div class="bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg font-medium border border-amber-200 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-star text-amber-600"></i>
+                                    <span class="truncate"><strong>Sila:</strong> ${art.pancasilaValue}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- INTERACTIVE BUTTONS BAR -->
+                    <div class="px-5 py-3.5 bg-amber-100/40 border-t border-amber-200/80 flex items-center justify-between text-xs">
+                        <button onclick="likeArtwork('${art.id}')" class="flex items-center space-x-1.5 text-red-600 font-bold bg-white px-3 py-1.5 rounded-xl border border-red-200 shadow-sm hover:scale-105 active:scale-95 transition">
+                            <i class="fa-solid fa-heart"></i>
+                            <span>${art.likes || 0}</span>
+                        </button>
+
+                        <button onclick="openArtworkDetail('${art.id}')" class="flex items-center space-x-1.5 text-amber-900 font-semibold bg-white px-3 py-1.5 rounded-xl border border-amber-200 shadow-sm hover:bg-amber-50 transition">
+                            <i class="fa-solid fa-comment-dots text-amber-700"></i>
+                            <span>${art.comments ? art.comments.length : 0} Komentar</span>
+                        </button>
+
+                        <button onclick="voteArtwork('${art.id}')" class="flex items-center space-x-1 text-amber-800 font-bold bg-amber-200/80 hover:bg-amber-300 px-2.5 py-1.5 rounded-xl transition">
+                            <i class="fa-solid fa-star text-amber-600"></i>
+                            <span>${art.votes || 0} Vote</span>
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function renderArtworkPreviewThumbnail(art, frameClass) {
+            if(art.fileType === 'pdf') {
+                return `
+                    <div class="w-full h-48 bg-gradient-to-br from-red-900 via-red-800 to-red-950 rounded p-4 border-4 border-amber-400/50 flex flex-col justify-between text-white shadow-md">
+                        <div class="flex items-center justify-between border-b border-red-700/60 pb-2">
+                            <i class="fa-solid fa-file-pdf text-3xl text-red-400"></i>
+                            <span class="text-[10px] bg-red-950/80 px-2 py-0.5 rounded border border-red-600">Dokumen PDF (${art.pdfPages || 3} Hal)</span>
+                        </div>
+                        <div class="text-center my-auto">
+                            <p class="font-bold text-xs text-red-100 line-clamp-2">${art.title}</p>
+                            <span class="text-[10px] text-red-300">Klik untuk pratinjau dokumen</span>
+                        </div>
+                        <div class="text-right text-[10px] text-red-300">PDF Reader Ready</div>
+                    </div>
+                `;
+            } else if(art.fileType === 'word') {
+                return `
+                    <div class="w-full h-48 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 rounded p-4 border-4 border-amber-400/50 flex flex-col justify-between text-white shadow-md">
+                        <div class="flex items-center justify-between border-b border-blue-700/60 pb-2">
+                            <i class="fa-solid fa-file-word text-3xl text-blue-300"></i>
+                            <span class="text-[10px] bg-blue-950/80 px-2 py-0.5 rounded border border-blue-600">Microsoft Word</span>
+                        </div>
+                        <div class="text-center my-auto">
+                            <p class="font-bold text-xs text-blue-100 line-clamp-2">${art.title}</p>
+                            <span class="text-[10px] text-blue-300">Klik untuk membaca isi esai</span>
+                        </div>
+                        <div class="text-right text-[10px] text-blue-300">DOCX Document</div>
+                    </div>
+                `;
+            } else {
+                // Image Type
+                return `
+                    <img src="${art.fileUrl}" alt="${art.title}" 
+                        class="max-h-52 w-full object-cover rounded ${frameClass} transition duration-500 group-hover:scale-105"
+                        onerror="this.src='https://placehold.co/800x600/5C3D2E/FFFDF9?text=Karya+Siswa'">
+                `;
+            }
+        }
+
+        function getCategoryBadge(cat) {
+            switch(cat) {
+                case 'galeri-1': return 'Galeri 1: Hak';
+                case 'galeri-2': return 'Galeri 2: Kewajiban';
+                case 'galeri-3': return 'Galeri 3: Sehari-Hari';
+                case 'galeri-4': return 'Galeri 4: Aksi Muda';
+                default: return 'Pameran Karya';
+            }
+        }
+
+        function filterGallery(categoryKey) {
+            currentFilter = categoryKey;
+            document.querySelectorAll('.gallery-tab-btn').forEach(btn => {
+                btn.classList.remove('bg-amber-800', 'text-white');
+                btn.classList.add('bg-white', 'text-amber-900');
+            });
+
+            const activeBtn = document.getElementById(`btn-${categoryKey}`);
+            if(activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-amber-900');
+                activeBtn.classList.add('bg-amber-800', 'text-white');
+            }
+
+            renderGallery();
+        }
+
+        function handleSearch() {
+            renderGallery();
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* ARTWORK DETAIL VIEWER MODAL                                                */
+        /* -------------------------------------------------------------------------- */
+        function openArtworkDetail(id) {
+            currentActiveArtId = id;
+            const art = artworks.find(a => a.id === id);
+            if(!art) return;
+
+            const modalContent = document.getElementById('modalArtworkContent');
+            
+            let fileDisplayHTML = '';
+            if(art.fileType === 'pdf') {
+                fileDisplayHTML = `
+                    <div class="bg-red-950 p-5 rounded-2xl text-white space-y-4">
+                        <div class="flex items-center justify-between border-b border-red-800 pb-2">
+                            <span class="font-bold text-xs flex items-center gap-2"><i class="fa-solid fa-file-pdf text-red-400"></i> Viewer PDF Dokumen</span>
+                            <span class="text-[10px] bg-red-900 px-2 py-0.5 rounded">${art.pdfPages || 3} Halaman</span>
+                        </div>
+                        <div class="bg-white text-gray-800 p-6 rounded-xl space-y-3 min-h-[250px] shadow-inner text-xs font-serif leading-relaxed">
+                            <h4 class="font-bold text-sm text-center text-red-950 border-b pb-2">${art.title}</h4>
+                            <p><strong>Ringkasan Dokumen PDF:</strong> ${art.description}</p>
+                            <p>Dokumen ini menyajikan analisis komprehensif mengenai penerapan hak dan kewajiban warga negara dalam norma hukum dan kehidupan sehari-hari siswa SMP Kelas IX.</p>
+                        </div>
+                    </div>
+                `;
+            } else if(art.fileType === 'word') {
+                fileDisplayHTML = `
+                    <div class="bg-blue-950 p-5 rounded-2xl text-white space-y-4">
+                        <div class="flex items-center justify-between border-b border-blue-800 pb-2">
+                            <span class="font-bold text-xs flex items-center gap-2"><i class="fa-solid fa-file-word text-blue-300"></i> Microsoft Word Document Viewer</span>
+                            <span class="text-[10px] bg-blue-900 px-2 py-0.5 rounded">Format .docx</span>
+                        </div>
+                        <div class="bg-white text-gray-800 p-6 rounded-xl space-y-3 min-h-[250px] shadow-inner text-xs leading-relaxed font-sans">
+                            <h4 class="font-bold text-sm text-center text-blue-950 border-b pb-2">${art.title}</h4>
+                            <div class="p-3 bg-blue-50/60 rounded-lg border border-blue-200 italic">
+                                "${art.wordTextContent || art.description}"
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                fileDisplayHTML = `
+                    <div class="bg-amber-950 p-4 rounded-2xl flex items-center justify-center">
+                        <img src="${art.fileUrl}" alt="${art.title}" class="max-h-96 rounded shadow-lg border-4 border-amber-400/40 object-contain">
+                    </div>
+                `;
+            }
+
+            modalContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    ${fileDisplayHTML}
+                    
+                    <div class="space-y-4">
+                        <span class="inline-block px-3 py-1 bg-amber-200 text-amber-900 text-xs font-bold rounded-full">
+                            ${getCategoryBadge(art.category)}
+                        </span>
+                        <h3 class="font-museum font-extrabold text-2xl text-amber-950">${art.title}</h3>
+                        
+                        <div class="text-xs text-amber-900 space-y-1 border-b border-amber-200 pb-3">
+                            <p><strong>Nama / Kelompok:</strong> ${art.author}</p>
+                            <p><strong>Kelas:</strong> ${art.class}</p>
+                            <p><strong>Jenis Karya:</strong> ${art.type}</p>
+                        </div>
+
+                        <div class="space-y-2 text-xs">
+                            <p><strong>Deskripsi Singkat:</strong></p>
+                            <p class="text-amber-900/90 leading-relaxed bg-white p-3 rounded-xl border border-amber-200">${art.description}</p>
+                        </div>
+
+                        <div class="space-y-1.5 text-xs">
+                            <p class="text-amber-900"><strong>Hak / Kewajiban:</strong> ${art.rightsDuties}</p>
+                            <p class="text-amber-900"><strong>Nilai Pancasila:</strong> ${art.pancasilaValue}</p>
+                        </div>
+
+                        <div class="p-3 bg-amber-100 rounded-xl border border-amber-300 text-xs text-amber-950">
+                            <strong>💬 Pesan untuk Pengunjung:</strong>
+                            <p class="italic mt-1">"${art.message}"</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            renderModalComments(art);
+            openModal('artworkDetailModal');
+        }
+
+        function renderModalComments(art) {
+            const commentsContainer = document.getElementById('modalCommentsList');
+            commentsContainer.innerHTML = '';
+
+            if(!art.comments || art.comments.length === 0) {
+                commentsContainer.innerHTML = `<p class="text-xs text-amber-700 italic">Belum ada komentar. Berikan apresiasi positif pertama!</p>`;
+                return;
+            }
+
+            art.comments.forEach(c => {
+                const item = document.createElement('div');
+                item.className = "bg-white p-3 rounded-xl border border-amber-200/80 text-xs space-y-0.5 relative group";
+                item.innerHTML = `
+                    <div class="flex items-center justify-between font-bold text-amber-950">
+                        <span>${c.name}</span>
+                        ${isTeacherMode ? `
+                            <button onclick="deleteComment('${art.id}', '${c.id}')" class="text-red-600 hover:text-red-800 text-[10px]">
+                                <i class="fa-solid fa-trash"></i> Hapus
+                            </button>
+                        ` : '<span class="text-[10px] text-amber-600 font-normal">Pengunjung</span>'}
+                    </div>
+                    <p class="text-amber-900/90">${c.text}</p>
+                `;
+                commentsContainer.appendChild(item);
+            });
+        }
+
+        async function submitModalComment() {
+            const authorInput = document.getElementById('modalCommentAuthor');
+            const textInput = document.getElementById('modalCommentText');
+
+            if(!authorInput.value.trim() || !textInput.value.trim()) {
+                alert('Mohon isi nama dan komentar Anda.');
+                return;
+            }
+
+            if(!ONLINE_MODE) {
+                alert('Website belum terhubung ke database online.');
+                return;
+            }
+
+            const art = artworks.find(a => a.id === currentActiveArtId);
+            if(art) {
+                const comment = {
+                    id: 'c-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+                    name: authorInput.value.trim(),
+                    text: textInput.value.trim(),
+                    createdAt: new Date().toISOString()
+                };
+
+                const { error } = await supabaseClient.rpc('add_comment', {
+                    p_art_id: art.id,
+                    p_comment: comment
+                });
+
+                if (error) {
+                    console.error(error);
+                    alert('Komentar gagal disimpan ke server.');
+                    return;
+                }
+
+                authorInput.value = '';
+                textInput.value = '';
+                await refreshOnlineData();
+            }
+        }
+
+        async function likeArtwork(id) {
+            if(!ONLINE_MODE) {
+                alert('Website belum terhubung ke database online.');
+                return;
+            }
+
+            const { error } = await supabaseClient.rpc('increment_artwork_counter', {
+                p_art_id: id,
+                p_field: 'likes'
+            });
+
+            if (error) {
+                console.error(error);
+                alert('Apresiasi gagal disimpan.');
+                return;
+            }
+
+            await refreshOnlineData();
+        }
+
+        async function voteArtwork(id) {
+            if(!ONLINE_MODE) {
+                alert('Website belum terhubung ke database online.');
+                return;
+            }
+
+            const { error } = await supabaseClient.rpc('increment_artwork_counter', {
+                p_art_id: id,
+                p_field: 'votes'
+            });
+
+            if (error) {
+                console.error(error);
+                alert('Vote gagal disimpan.');
+                return;
+            }
+
+            await refreshOnlineData();
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* REFLECTIONS & AWARDS MANAGEMENT                                            */
+        /* -------------------------------------------------------------------------- */
+        async function submitReflection(event) {
+            event.preventDefault();
+            const name = document.getElementById('refName').value.trim();
+            const cls = document.getElementById('refClass').value.trim();
+            const content = document.getElementById('refContent').value.trim();
+
+            if(!name || !cls || !content) return;
+
+            if(!ONLINE_MODE) {
+                alert('Website belum terhubung ke database online.');
+                return;
+            }
+
+            const reflection = {
+                id: 'ref-' + Date.now() + '-' + Math.random().toString(36).slice(2,7),
+                name,
+                class: cls,
+                content,
+                createdAt: new Date().toISOString()
+            };
+
+            const { error } = await supabaseClient.rpc('append_reflection', {
+                p_reflection: reflection
+            });
+
+            if (error) {
+                console.error(error);
+                alert('Refleksi gagal disimpan ke server.');
+                return;
+            }
+
+            reflections.unshift(reflection);
+            renderReflections();
+            event.target.reset();
+        }
+
+        function renderReflections() {
+            const wall = document.getElementById('reflectionWall');
+            wall.innerHTML = '';
+
+            reflections.forEach(ref => {
+                const note = document.createElement('div');
+                note.className = "bg-amber-50 p-4 rounded-2xl border-l-4 border-amber-600 shadow-sm space-y-2 text-xs flex flex-col justify-between relative group";
+                note.innerHTML = `
+                    ${isTeacherMode ? `
+                        <button onclick="deleteReflection('${ref.id}')" class="absolute top-2 right-2 text-red-600 hover:text-red-800 text-xs">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    ` : ''}
+                    <p class="text-amber-950/90 leading-relaxed italic">"${ref.content}"</p>
+                    <div class="pt-2 border-t border-amber-200/60 font-bold text-amber-900 flex items-center justify-between">
+                        <span><i class="fa-solid fa-user text-amber-700 mr-1"></i> ${ref.name}</span>
+                        <span class="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">${ref.class}</span>
+                    </div>
+                `;
+                wall.appendChild(note);
+            });
+        }
+
+        function renderAwardsModalContent() {
+            const container = document.getElementById('awardsCategoryList');
+            container.innerHTML = '';
+
+            const sortedByVotes = [...artworks].sort((a,b) => (b.votes || 0) - (a.votes || 0));
+
+            awardCategories.forEach((cat, index) => {
+                const manualSelectedId = manualAwardWinners[cat.key];
+                let winner = manualSelectedId ? artworks.find(a => a.id === manualSelectedId) : null;
+                if(!winner) {
+                    winner = sortedByVotes[index % sortedByVotes.length] || artworks[0];
+                }
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl border border-amber-200 flex flex-col sm:flex-row items-center gap-4 shadow-sm";
+                
+                card.innerHTML = `
+                    <div class="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 text-2xl shrink-0">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <div class="flex-grow space-y-1 text-center sm:text-left">
+                        <h4 class="font-bold text-amber-950 text-sm sm:text-base">${cat.title}</h4>
+                        <p class="text-xs text-amber-800">${cat.desc}</p>
+                        ${winner ? `
+                            <div class="mt-2 text-xs p-2 bg-amber-50 rounded-xl border border-amber-200 inline-block font-semibold text-amber-900">
+                                🏆 Pemenang: <strong>${winner.title}</strong> — ${winner.author} (${winner.class})
+                            </div>
+                        ` : ''}
+                        
+                        ${isTeacherMode ? `
+                            <div class="mt-2 pt-2 border-t border-gray-100 text-xs">
+                                <label class="text-[11px] font-bold text-blue-900 block mb-1">Tetapkan Pemenang Kategori (Mode Guru):</label>
+                                <select onchange="setManualAwardWinner('${cat.key}', this.value)" class="px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-950">
+                                    <option value="">-- Pilihan Otomatis Voting --</option>
+                                    ${artworks.map(a => `<option value="${a.id}" ${manualSelectedId === a.id ? 'selected' : ''}>${a.title} (${a.author})</option>`).join('')}
+                                </select>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function setManualAwardWinner(categoryKey, artId) {
+            if(artId) {
+                manualAwardWinners[categoryKey] = artId;
+            } else {
+                delete manualAwardWinners[categoryKey];
+            }
+            saveData();
+            renderAwardsModalContent();
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    </script>
+</body>
+</html>
